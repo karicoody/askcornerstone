@@ -1,10 +1,8 @@
 "use client";
 import { useState } from "react";
-
 export default function Page() {
   const [q, setQ] = useState("");
   const [log, setLog] = useState<{who:"you"|"bot"; text:string; sources?:{title:string,page?:number}[]}[]>([]);
-
   async function ask(e: React.FormEvent) {
     e.preventDefault();
     if (!q.trim()) return;
@@ -14,7 +12,6 @@ export default function Page() {
     const j = await r.json();
     setLog(l=>[...l, {who:"bot", text: j.answer || "—", sources: j.sources || []}]);
   }
-
   return (
     <div style={{maxWidth:760, margin:"24px auto"}}>
       <div style={{background:"#7A9E9F", color:"#fff", padding:"14px 18px", borderRadius:12, fontWeight:600}}>
