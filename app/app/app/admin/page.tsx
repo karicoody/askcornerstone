@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-
 export default function Admin() {
   const [files, setFiles] = useState<FileList|null>(null);
   const [msg, setMsg] = useState("");
