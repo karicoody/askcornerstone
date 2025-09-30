@@ -28,12 +28,13 @@ export async function POST(req: NextRequest) {
 
     const response = await openai.responses.create({
       model: "gpt-4.1-mini",
-      system: SYSTEM_PROMPT,
+      instructions: SYSTEM_PROMPT, // <- use 'instructions' (not 'system')
       input: message,
       tools: [
         {
           type: "file_search",
           vector_store_ids: [vectorStoreId],
+          // optional: max_results: 8, score_threshold: 0.4
         },
       ],
       tool_choice: "auto",
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
 
     const answer = (response as any).output_text || "";
 
-    // Collect sources if returned
+    // Try to collect citations if present
     let sources: { title: string; page?: number }[] = [];
     for (const item of ((response as any).output ?? [])) {
       if (item.type === "tool_result" && item.tool_name === "file_search") {
