@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import type { Uploadable } from "openai/uploads"; // <-- add this
+import type { Uploadable } from "openai/uploads";
 
 export const maxDuration = 60;
 
@@ -20,27 +20,19 @@ async function getOrCreateVectorStore(name: string) {
 export async function POST(req: NextRequest) {
   try {
     const form = await req.formData();
+
+    // These are already Web File objects from the browser upload:
     const files = form.getAll("files") as File[];
+
     if (!files.length) {
       return NextResponse.json({ message: "No files received." }, { status: 400 });
     }
 
     const store = await getOrCreateVectorStore(VECTOR_STORE_NAME);
 
-    // Convert browser File -> Uploadable with filename
-    const uploadables: Uploadable[] = await Promise.all(
-      files.map(async (f) => {
-        const ab = await f.arrayBuffer(); // ArrayBuffer is accepted by the SDK
-        return {
-          filename: f.name,
-          content: ab, // ArrayBuffer (or new Uint8Array(ab)) both work
-        };
-      })
-    );
-
-    // IMPORTANT: pass an object with { files: Uploadable[] }
+    // Pass Files directly as Uploadable[]
     const uploaded = await openai.vectorStores.fileBatches.uploadAndPoll(store.id, {
-      files: uploadables,
+      files: files as unknown as Uploadable[],
     });
 
     return NextResponse.json({
