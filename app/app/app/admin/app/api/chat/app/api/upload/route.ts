@@ -20,22 +20,30 @@ export async function POST(req: NextRequest) {
   try {
     const form = await req.formData();
     const files = form.getAll("files") as File[];
-    if (!files.length) return NextResponse.json({ message: "No files received." }, { status: 400 });
+    if (!files.length) {
+      return NextResponse.json({ message: "No files received." }, { status: 400 });
+    }
 
     const store = await getOrCreateVectorStore(VECTOR_STORE_NAME);
 
-    const streams = await Promise.all(files.map(async (f) => {
-      const buf = Buffer.from(await f.arrayBuffer());
-      return { filename: f.name, content: buf };
-    }));
-
-    const uploaded = await openai.vectorStores.fileBatches.uploadAndPoll(
-      store.id,
-      streams
+    // Convert browser File -> Uint8Array (works cleanly with the SDK typings)
+    const uploadables = await Promise.all(
+      files.map(async (f) => {
+        const ab = await f.arrayBuffer();
+        return {
+          filename: f.name,
+          content: new Uint8Array(ab), // <- key change (instead of Buffer)
+        };
+      })
     );
 
+    // The SDK expects an object: { files: Uploadable[] }
+    const uploaded = await openai.vectorStores.fileBatches.uploadAndPoll(store.id, {
+      files: uploadables, // <- key change (wrap in { files: ... })
+    });
+
     return NextResponse.json({
-      message: `Uploaded. Status: ${uploaded.status}. Added: ${uploaded.file_counts?.completed || 0}`
+      message: `Uploaded. Status: ${uploaded.status}. Added: ${uploaded.file_counts?.completed || 0}`,
     });
   } catch (e: any) {
     return NextResponse.json({ message: e.message || "Upload failed." }, { status: 500 });
