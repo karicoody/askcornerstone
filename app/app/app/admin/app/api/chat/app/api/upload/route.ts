@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import type { Uploadable } from "openai/uploads"; // <-- add this
 
 export const maxDuration = 60;
 
@@ -26,20 +27,20 @@ export async function POST(req: NextRequest) {
 
     const store = await getOrCreateVectorStore(VECTOR_STORE_NAME);
 
-    // Convert browser File -> Uint8Array (works cleanly with the SDK typings)
-    const uploadables = await Promise.all(
+    // Convert browser File -> Uploadable with filename
+    const uploadables: Uploadable[] = await Promise.all(
       files.map(async (f) => {
-        const ab = await f.arrayBuffer();
+        const ab = await f.arrayBuffer(); // ArrayBuffer is accepted by the SDK
         return {
           filename: f.name,
-          content: new Uint8Array(ab), // <- key change (instead of Buffer)
+          content: ab, // ArrayBuffer (or new Uint8Array(ab)) both work
         };
       })
     );
 
-    // The SDK expects an object: { files: Uploadable[] }
+    // IMPORTANT: pass an object with { files: Uploadable[] }
     const uploaded = await openai.vectorStores.fileBatches.uploadAndPoll(store.id, {
-      files: uploadables, // <- key change (wrap in { files: ... })
+      files: uploadables,
     });
 
     return NextResponse.json({
