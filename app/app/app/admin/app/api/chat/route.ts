@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
@@ -13,7 +16,7 @@ When you use retrieved documents, integrate them and include a short "Sources" l
 
 async function getVectorStoreIdByName(name: string) {
   const stores = await openai.vectorStores.list({ limit: 100 });
-  const match = stores.data.find(vs => (vs as any).name === name);
+  const match = stores.data.find((vs: any) => vs.name === name);
   if (!match) throw new Error(`Vector store '${name}' not found. Upload files first.`);
   return (match as any).id as string;
 }
@@ -27,26 +30,31 @@ export async function POST(req: NextRequest) {
       model: "gpt-4.1-mini",
       system: SYSTEM_PROMPT,
       input: message,
-      tools: [{ type: "file_search" }],
+      tools: [
+        {
+          type: "file_search",
+          vector_store_ids: [vectorStoreId],
+        },
+      ],
       tool_choice: "auto",
-      file_search: { vector_store_ids: [vectorStoreId] }
     });
 
-    // Basic extraction
     const answer = (response as any).output_text || "";
-    // Optional: collect citations if present
-    let sources: {title:string; page?:number}[] = [];
+
+    // Collect sources if returned
+    let sources: { title: string; page?: number }[] = [];
     for (const item of ((response as any).output ?? [])) {
       if (item.type === "tool_result" && item.tool_name === "file_search") {
         const cits = item?.content?.citations || [];
         sources = cits.map((c: any) => ({
           title: c?.file?.filename || "Document",
-          page: c?.file?.page_number
+          page: c?.file?.page_number,
         }));
       }
     }
+
     return NextResponse.json({ answer, sources });
-  } catch (e:any) {
+  } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
