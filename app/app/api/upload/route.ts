@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
-
-const client = new OpenAI();
 
 export async function POST(req: Request) {
   try {
+    // Get the file from the request (assuming multipart/form-data)
     const formData = await req.formData();
     const file = formData.get("file") as File;
 
@@ -12,15 +10,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
+    // Example: convert file to ArrayBuffer (you can later save to DB or storage)
     const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    console.log("File uploaded:", file.name, "size:", bytes.byteLength);
 
-    const uploadedFile = await client.files.create({
-      file: buffer,
-      purpose: "assistants",
+    return NextResponse.json({
+      message: "File uploaded successfully!",
+      filename: file.name,
+      size: bytes.byteLength,
     });
-
-    return NextResponse.json({ fileId: uploadedFile.id });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
