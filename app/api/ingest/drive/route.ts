@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
   try {
-    const response = await client.beta.vector_stores.file_batches.create({
+    const response = await client.beta.vectorStores.fileBatches.create({
       vector_store_id: process.env.OPENAI_VECTOR_STORE_ID!,
       files: [{ source: "google_drive" }],
     });
