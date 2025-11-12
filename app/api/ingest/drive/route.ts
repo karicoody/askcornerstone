@@ -7,13 +7,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
   try {
-    const response = await client.beta.vectorStores.fileBatches.create(
-      process.env.OPENAI_VECTOR_STORE_ID!,
-      { files: [{ source: "google_drive" }] }
-    );
+    const response = await client.beta.vector_stores.file_batches.create({
+      vector_store_id: process.env.OPENAI_VECTOR_STORE_ID!,
+      files: [{ source: "google_drive" }],
+    });
 
     return NextResponse.json({ ok: true, status: "completed", response });
   } catch (error) {
